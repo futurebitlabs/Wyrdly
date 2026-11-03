@@ -15,6 +15,7 @@ import type { WendCell } from "@/lib/wend/generate";
 import { WendBoard } from "./WendBoard";
 import { WendLeaderboard } from "./WendLeaderboard";
 import { HomeButton } from "./HomeButton";
+import { WordMeanings } from "./WordMeanings";
 
 type Status = "loading" | "needs-name" | "ready" | "not-found";
 
@@ -577,12 +578,15 @@ export function WendClient({
               )}
             </p>
             {currentRound.words && (
-              <p className="mt-0.5 text-xs text-foreground/50">
-                Words:{" "}
-                <span className="uppercase">
-                  {currentRound.words.join(", ")}
-                </span>
-              </p>
+              <>
+                <p className="mt-0.5 text-xs text-foreground/50">
+                  Words:{" "}
+                  <span className="uppercase">
+                    {currentRound.words.join(", ")}
+                  </span>
+                </p>
+                <WordMeanings words={currentRound.words} label="Show meanings" />
+              </>
             )}
             {!player.isHost && (
               <p className="mt-0.5 text-xs text-foreground/50">

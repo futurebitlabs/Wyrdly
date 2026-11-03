@@ -10,6 +10,7 @@ import { GameBoard } from "./GameBoard";
 import { Keyboard } from "./Keyboard";
 import { Leaderboard } from "./Leaderboard";
 import { HomeButton } from "./HomeButton";
+import { WordMeanings } from "./WordMeanings";
 
 type Status = "loading" | "needs-name" | "ready" | "not-found" | "error";
 
@@ -440,6 +441,9 @@ export function RoomClient({ code, solo = false }: { code: string; solo?: boolea
               </>
             )}
           </p>
+          {currentRound?.word && (
+            <WordMeanings words={[currentRound.word]} label="Show meaning" />
+          )}
           {player.isHost ? (
             <button
               onClick={handlePlayAgain}
