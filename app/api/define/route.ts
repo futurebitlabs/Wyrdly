@@ -16,20 +16,37 @@ export interface WordDefinition {
   definition: string | null;
 }
 
+const MAX_ATTEMPTS = 3;
+const RETRY_DELAY_MS = 300;
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 async function lookupDefinition(word: string): Promise<WordDefinition> {
-  try {
-    const res = await fetch(`${DICTIONARY_API}/${encodeURIComponent(word.toLowerCase())}`);
-    if (!res.ok) {
-      return { word, partOfSpeech: null, definition: null };
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      const res = await fetch(`${DICTIONARY_API}/${encodeURIComponent(word.toLowerCase())}`);
+      if (res.status === 404) {
+        // The dictionary genuinely has no entry for this word — not a transient failure.
+        return { word, partOfSpeech: null, definition: null };
+      }
+      if (!res.ok) {
+        throw new Error(`Dictionary API returned ${res.status}`);
+      }
+      const entries = (await res.json()) as DictionaryApiEntry[];
+      const meaning = entries[0]?.meanings?.find((m) => m.definitions?.[0]?.definition);
+      const definition = meaning?.definitions?.[0]?.definition ?? null;
+      return { word, partOfSpeech: meaning?.partOfSpeech ?? null, definition };
+    } catch (err) {
+      if (attempt === MAX_ATTEMPTS) {
+        console.error(`Failed to fetch definition for "${word}" after ${attempt} attempts`, err);
+        return { word, partOfSpeech: null, definition: null };
+      }
+      await sleep(RETRY_DELAY_MS * attempt);
     }
-    const entries = (await res.json()) as DictionaryApiEntry[];
-    const meaning = entries[0]?.meanings?.find((m) => m.definitions?.[0]?.definition);
-    const definition = meaning?.definitions?.[0]?.definition ?? null;
-    return { word, partOfSpeech: meaning?.partOfSpeech ?? null, definition };
-  } catch (err) {
-    console.error(`Failed to fetch definition for "${word}"`, err);
-    return { word, partOfSpeech: null, definition: null };
   }
+  return { word, partOfSpeech: null, definition: null };
 }
 
 export async function GET(request: Request) {
