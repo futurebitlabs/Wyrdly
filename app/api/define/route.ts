@@ -1,51 +1,59 @@
 import { NextResponse } from "next/server";
 
-const DICTIONARY_API = "https://api.dictionaryapi.dev/api/v2/entries/en";
+// api.dictionaryapi.dev sits behind a Cloudflare bot challenge that blocks
+// server-to-server requests from datacenter IPs (e.g. Vercel's), so every
+// lookup from production failed with a 403 "Just a moment..." page even
+// though the same request worked fine from a residential IP. Datamuse has
+// no such challenge and needs no API key.
+const DATAMUSE_API = "https://api.datamuse.com/words";
 const MAX_WORDS = 20;
+const MAX_ATTEMPTS = 3;
+const RETRY_DELAY_MS = 300;
 
-interface DictionaryApiEntry {
-  meanings?: {
-    partOfSpeech?: string;
-    definitions?: { definition?: string }[];
-  }[];
+interface DatamuseEntry {
+  word: string;
+  defs?: string[];
 }
 
 export interface WordDefinition {
   word: string;
   partOfSpeech: string | null;
   definition: string | null;
-  debug?: string;
 }
 
-const MAX_ATTEMPTS = 3;
-const RETRY_DELAY_MS = 300;
+const POS_LABELS: Record<string, string> = {
+  n: "noun",
+  v: "verb",
+  adj: "adjective",
+  adv: "adverb",
+  u: "other",
+};
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function lookupDefinition(word: string, debug: boolean): Promise<WordDefinition> {
-  let lastDebug = "";
+async function lookupDefinition(word: string): Promise<WordDefinition> {
+  const lower = word.toLowerCase();
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     try {
-      const res = await fetch(`${DICTIONARY_API}/${encodeURIComponent(word.toLowerCase())}`);
-      if (res.status === 404) {
-        // The dictionary genuinely has no entry for this word — not a transient failure.
-        return { word, partOfSpeech: null, definition: null, ...(debug ? { debug: "404" } : {}) };
-      }
+      const res = await fetch(`${DATAMUSE_API}?sp=${encodeURIComponent(lower)}&md=d&max=1`);
       if (!res.ok) {
-        lastDebug = `status:${res.status} body:${(await res.text()).slice(0, 120)}`;
-        throw new Error(`Dictionary API returned ${res.status}`);
+        throw new Error(`Datamuse API returned ${res.status}`);
       }
-      const entries = (await res.json()) as DictionaryApiEntry[];
-      const meaning = entries[0]?.meanings?.find((m) => m.definitions?.[0]?.definition);
-      const definition = meaning?.definitions?.[0]?.definition ?? null;
-      return { word, partOfSpeech: meaning?.partOfSpeech ?? null, definition, ...(debug ? { debug: `ok:${attempt}` } : {}) };
+      const entries = (await res.json()) as DatamuseEntry[];
+      const entry = entries.find((e) => e.word.toLowerCase() === lower);
+      const firstDef = entry?.defs?.[0];
+      if (!firstDef) {
+        return { word, partOfSpeech: null, definition: null };
+      }
+      const [posCode, ...rest] = firstDef.split("\t");
+      const definition = rest.join("\t").trim() || null;
+      return { word, partOfSpeech: POS_LABELS[posCode] ?? null, definition };
     } catch (err) {
-      lastDebug = lastDebug || `err:${err instanceof Error ? err.message : String(err)}`;
       if (attempt === MAX_ATTEMPTS) {
         console.error(`Failed to fetch definition for "${word}" after ${attempt} attempts`, err);
-        return { word, partOfSpeech: null, definition: null, ...(debug ? { debug: lastDebug } : {}) };
+        return { word, partOfSpeech: null, definition: null };
       }
       await sleep(RETRY_DELAY_MS * attempt);
     }
@@ -60,13 +68,12 @@ export async function GET(request: Request) {
     .map((w) => w.trim())
     .filter(Boolean)
     .slice(0, MAX_WORDS);
-  const debug = searchParams.get("debug") === "1";
 
   if (words.length === 0) {
     return NextResponse.json({ error: "No words provided" }, { status: 400 });
   }
 
-  const results = await Promise.all(words.map((w) => lookupDefinition(w, debug)));
+  const results = await Promise.all(words.map(lookupDefinition));
 
   return NextResponse.json({ results });
 }
