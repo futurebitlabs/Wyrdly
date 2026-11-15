@@ -42,3 +42,62 @@ export function saveWendLevel(level: number) {
     // ignore
   }
 }
+
+const DAILY_STREAK_KEY = "wordly:wyrdle:dailyStreak";
+
+export interface DailyStreakState {
+  lastPlayedDate: string | null;
+  lastResultWon: boolean;
+  currentStreak: number;
+  maxStreak: number;
+}
+
+const EMPTY_STREAK: DailyStreakState = {
+  lastPlayedDate: null,
+  lastResultWon: false,
+  currentStreak: 0,
+  maxStreak: 0,
+};
+
+export function loadDailyStreak(): DailyStreakState {
+  try {
+    const raw = localStorage.getItem(DAILY_STREAK_KEY);
+    if (!raw) return EMPTY_STREAK;
+    return { ...EMPTY_STREAK, ...(JSON.parse(raw) as Partial<DailyStreakState>) };
+  } catch {
+    return EMPTY_STREAK;
+  }
+}
+
+export function hasPlayedDailyOn(dateKey: string): boolean {
+  return loadDailyStreak().lastPlayedDate === dateKey;
+}
+
+function dayBefore(dateKey: string): string {
+  const d = new Date(`${dateKey}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() - 1);
+  return d.toISOString().slice(0, 10);
+}
+
+// Idempotent for a given dateKey: calling it again for the same day (e.g. on
+// re-render or page reload) returns the already-recorded state unchanged.
+export function recordDailyResult(dateKey: string, won: boolean): DailyStreakState {
+  const existing = loadDailyStreak();
+  if (existing.lastPlayedDate === dateKey) return existing;
+
+  const continuesStreak = existing.lastPlayedDate === dayBefore(dateKey) && existing.lastResultWon;
+  const currentStreak = won ? (continuesStreak ? existing.currentStreak + 1 : 1) : 0;
+  const next: DailyStreakState = {
+    lastPlayedDate: dateKey,
+    lastResultWon: won,
+    currentStreak,
+    maxStreak: Math.max(existing.maxStreak, currentStreak),
+  };
+
+  try {
+    localStorage.setItem(DAILY_STREAK_KEY, JSON.stringify(next));
+  } catch {
+    // ignore
+  }
+  return next;
+}

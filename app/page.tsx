@@ -1,8 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { savePlayer, loadWendLevel } from "@/lib/storage";
+import {
+  savePlayer,
+  loadWendLevel,
+  loadDailyStreak,
+  hasPlayedDailyOn,
+  type DailyStreakState,
+} from "@/lib/storage";
+import { getTodayDateKey } from "@/lib/daily";
 import { postJson } from "@/lib/postJson";
 
 type GameType = "wyrdle" | "wend";
@@ -21,7 +28,31 @@ export default function Home() {
   const [joinName, setJoinName] = useState("");
   const [joinCode, setJoinCode] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [pending, setPending] = useState<"solo" | "create" | "join" | null>(null);
+  const [pending, setPending] = useState<"solo" | "daily" | "create" | "join" | null>(null);
+  const [dailyStreak, setDailyStreak] = useState<DailyStreakState | null>(null);
+  const [playedToday, setPlayedToday] = useState(false);
+
+  useEffect(() => {
+    if (game !== "wyrdle") return;
+    setDailyStreak(loadDailyStreak());
+    setPlayedToday(hasPlayedDailyOn(getTodayDateKey()));
+  }, [game]);
+
+  async function handleDaily() {
+    setPending("daily");
+    setError(null);
+    try {
+      const data = await postJson<{
+        room: { code: string };
+        player: { id: string; name: string };
+      }>("/api/rooms", { name: "Player", gameType: "wyrdle", daily: true });
+      savePlayer(data.room.code, { playerId: data.player.id, name: data.player.name });
+      router.push(`/room/${data.room.code}?solo=1&daily=1`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+      setPending(null);
+    }
+  }
 
   async function handleSolo() {
     if (!game) return;
@@ -140,6 +171,31 @@ export default function Home() {
             {GAMES.find((g) => g.id === game)?.description}
           </p>
         </div>
+
+        {game === "wyrdle" && (
+          <button
+            type="button"
+            onClick={handleDaily}
+            disabled={pending !== null || playedToday}
+            className="w-full rounded-lg border border-foreground/10 p-5 text-left transition-colors hover:border-foreground/30 disabled:opacity-60"
+          >
+            <div className="flex items-center justify-between">
+              <h2 className="font-semibold text-foreground">Daily challenge</h2>
+              {dailyStreak && dailyStreak.currentStreak > 0 && (
+                <span className="text-sm font-medium text-foreground">
+                  🔥 {dailyStreak.currentStreak}
+                </span>
+              )}
+            </div>
+            <p className="mt-1 text-sm text-foreground/60">
+              {pending === "daily"
+                ? "Starting…"
+                : playedToday
+                  ? "Today's word is solved. Come back tomorrow."
+                  : "One word a day, same for everyone. Keep your streak alive."}
+            </p>
+          </button>
+        )}
 
         <div className="flex rounded-lg border border-foreground/10 p-1">
           <button

@@ -8,6 +8,7 @@ async function RoomPageInner({ params, searchParams }: PageProps<"/room/[code]">
   const code = rawCode.toUpperCase();
   const query = await searchParams;
   const solo = query.solo === "1";
+  const daily = query.daily === "1";
 
   const supabase = createServiceClient();
   const { data: room } = await supabase
@@ -19,7 +20,7 @@ async function RoomPageInner({ params, searchParams }: PageProps<"/room/[code]">
   if (room?.game_type === "wend") {
     return <WendClient code={code} solo={solo} />;
   }
-  return <RoomClient code={code} solo={solo} />;
+  return <RoomClient code={code} solo={solo} daily={daily} />;
 }
 
 export default function RoomPage(props: PageProps<"/room/[code]">) {

@@ -5,8 +5,9 @@ export async function createRound(
   supabase: SupabaseClient,
   roomId: string,
   roundNumber: number,
+  wordOverride?: string,
 ) {
-  const word = WORDS[Math.floor(Math.random() * WORDS.length)];
+  const word = wordOverride ?? WORDS[Math.floor(Math.random() * WORDS.length)];
 
   const { data: round, error: roundError } = await supabase
     .from("rounds")

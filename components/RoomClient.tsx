@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getSupabaseClient } from "@/lib/supabase/client";
-import { loadPlayer, savePlayer } from "@/lib/storage";
+import { loadPlayer, savePlayer, recordDailyResult, type DailyStreakState } from "@/lib/storage";
+import { getTodayDateKey } from "@/lib/daily";
 import { postJson } from "@/lib/postJson";
 import type { GuessRow, PlayerInfo, RoomInfo, RoundInfo, RoundStatus } from "@/lib/types";
 import type { LetterStatus } from "@/lib/wordle";
@@ -74,7 +75,15 @@ function toRoundInfo(row: RoundStateRow): RoundInfo {
 
 const STATUS_RANK: Record<LetterStatus, number> = { absent: 0, present: 1, correct: 2 };
 
-export function RoomClient({ code, solo = false }: { code: string; solo?: boolean }) {
+export function RoomClient({
+  code,
+  solo = false,
+  daily = false,
+}: {
+  code: string;
+  solo?: boolean;
+  daily?: boolean;
+}) {
   const [status, setStatus] = useState<Status>("loading");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [nameInput, setNameInput] = useState("");
@@ -266,6 +275,15 @@ export function RoomClient({ code, solo = false }: { code: string; solo?: boolea
     [players, currentRound],
   );
 
+  const [dailyStreak, setDailyStreak] = useState<DailyStreakState | null>(null);
+  const recordedDailyRef = useRef(false);
+  useEffect(() => {
+    if (!daily || !isGameOver || !player || recordedDailyRef.current) return;
+    recordedDailyRef.current = true;
+    const won = winner?.id === player.id;
+    setDailyStreak(recordDailyResult(getTodayDateKey(), won));
+  }, [daily, isGameOver, player, winner]);
+
   const letterStatuses = useMemo(() => {
     const map: Record<string, LetterStatus> = {};
     for (const g of myGuesses) {
@@ -411,12 +429,15 @@ export function RoomClient({ code, solo = false }: { code: string; solo?: boolea
 
       <div className="text-center">
         <p className="text-xs uppercase tracking-wide text-foreground/50">
-          {isSolo ? "Playing solo · " : "Game key · "}Round {currentRound?.roundNumber ?? 1}
+          {daily ? "Daily challenge" : isSolo ? "Playing solo · " : "Game key · "}
+          {!daily && `Round ${currentRound?.roundNumber ?? 1}`}
         </p>
-        <p className="font-mono text-2xl font-bold tracking-widest text-foreground">
-          {room.code}
-        </p>
-        {isSolo && (
+        {!daily && (
+          <p className="font-mono text-2xl font-bold tracking-widest text-foreground">
+            {room.code}
+          </p>
+        )}
+        {isSolo && !daily && (
           <p className="mt-1 text-xs text-foreground/40">Share this key to invite others</p>
         )}
       </div>
@@ -444,7 +465,16 @@ export function RoomClient({ code, solo = false }: { code: string; solo?: boolea
           {currentRound?.word && (
             <WordMeanings words={[currentRound.word]} label="Show meaning" />
           )}
-          {player.isHost ? (
+          {daily ? (
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-foreground">
+                {dailyStreak && dailyStreak.currentStreak > 0
+                  ? `🔥 ${dailyStreak.currentStreak} day streak`
+                  : "Streak reset — win tomorrow to start a new one"}
+              </p>
+              <p className="text-xs text-foreground/50">Come back tomorrow for a new word.</p>
+            </div>
+          ) : player.isHost ? (
             <button
               onClick={handlePlayAgain}
               disabled={startingRound}
