@@ -5,7 +5,7 @@ import { getSupabaseClient } from "@/lib/supabase/client";
 import {
   loadPlayer,
   savePlayer,
-  saveWendLevel,
+  saveSnakewordLevel,
   recordDailyResult,
   type DailyStreakState,
 } from "@/lib/storage";
@@ -15,12 +15,12 @@ import type {
   PlayerInfo,
   RoomInfo,
   RoundStatus,
-  WendFoundWord,
-  WendRoundInfo,
+  SnakewordFoundWord,
+  SnakewordRoundInfo,
 } from "@/lib/types";
-import type { WendCell } from "@/lib/wend/generate";
-import { WendBoard } from "./WendBoard";
-import { WendLeaderboard } from "./WendLeaderboard";
+import type { SnakewordCell } from "@/lib/snakeword/generate";
+import { SnakewordBoard } from "./SnakewordBoard";
+import { SnakewordLeaderboard } from "./SnakewordLeaderboard";
 import { HomeButton } from "./HomeButton";
 import { WordMeanings } from "./WordMeanings";
 
@@ -43,14 +43,14 @@ interface PlayerRow {
   is_host: boolean;
 }
 
-interface WendStateRow {
+interface SnakewordStateRow {
   round_id: string;
   room_id: string;
   round_number: number;
   level_number: number;
   status: RoundStatus;
   grid_size: number;
-  cells: WendCell[][];
+  cells: SnakewordCell[][];
   word_lengths: number[];
   words: string[] | null;
   winner_player_id: string | null;
@@ -58,7 +58,7 @@ interface WendStateRow {
   finished_at: string | null;
 }
 
-interface WendFoundWordRow {
+interface SnakewordFoundWordRow {
   id: string;
   round_id: string;
   player_id: string;
@@ -71,7 +71,7 @@ function toPlayerInfo(row: PlayerRow): PlayerInfo {
   return { id: row.id, name: row.name, isHost: row.is_host };
 }
 
-function toRoundInfo(row: WendStateRow): WendRoundInfo {
+function toRoundInfo(row: SnakewordStateRow): SnakewordRoundInfo {
   return {
     roundId: row.round_id,
     roomId: row.room_id,
@@ -88,7 +88,7 @@ function toRoundInfo(row: WendStateRow): WendRoundInfo {
   };
 }
 
-function toFoundWord(row: WendFoundWordRow): WendFoundWord {
+function toFoundWord(row: SnakewordFoundWordRow): SnakewordFoundWord {
   return {
     id: row.id,
     roundId: row.round_id,
@@ -99,7 +99,7 @@ function toFoundWord(row: WendFoundWordRow): WendFoundWord {
   };
 }
 
-export function WendClient({
+export function SnakewordClient({
   code,
   solo = false,
   daily = false,
@@ -115,8 +115,8 @@ export function WendClient({
   const [room, setRoom] = useState<RoomInfo | null>(null);
   const [player, setPlayer] = useState<PlayerInfo | null>(null);
   const [players, setPlayers] = useState<PlayerInfo[]>([]);
-  const [rounds, setRounds] = useState<WendRoundInfo[]>([]);
-  const [found, setFound] = useState<WendFoundWord[]>([]);
+  const [rounds, setRounds] = useState<SnakewordRoundInfo[]>([]);
+  const [found, setFound] = useState<SnakewordFoundWord[]>([]);
   const [banner, setBanner] = useState<string | null>(null);
   const [startingRound, setStartingRound] = useState(false);
   const [hint, setHint] = useState<[number, number] | null>(null);
@@ -186,25 +186,25 @@ export function WendClient({
           .select("id, name, is_host")
           .eq("room_id", room!.id),
         supabase
-          .from("wend_state")
+          .from("snakeword_state")
           .select("*")
           .eq("room_id", room!.id)
           .order("round_number", { ascending: true }),
-        supabase.from("wend_found_words").select("*").eq("room_id", room!.id),
+        supabase.from("snakeword_found_words").select("*").eq("room_id", room!.id),
       ]);
       if (cancelled) return;
       if (playersRes.data)
         setPlayers((playersRes.data as PlayerRow[]).map(toPlayerInfo));
       if (roundsRes.data)
-        setRounds((roundsRes.data as WendStateRow[]).map(toRoundInfo));
+        setRounds((roundsRes.data as SnakewordStateRow[]).map(toRoundInfo));
       if (foundRes.data)
-        setFound((foundRes.data as WendFoundWordRow[]).map(toFoundWord));
+        setFound((foundRes.data as SnakewordFoundWordRow[]).map(toFoundWord));
     }
 
     loadInitialState();
 
     const channel = supabase
-      .channel(`wend-room:${room.id}`)
+      .channel(`snakeword-room:${room.id}`)
       .on(
         "postgres_changes",
         {
@@ -225,11 +225,11 @@ export function WendClient({
         {
           event: "INSERT",
           schema: "public",
-          table: "wend_state",
+          table: "snakeword_state",
           filter: `room_id=eq.${room.id}`,
         },
         (payload) => {
-          const row = toRoundInfo(payload.new as WendStateRow);
+          const row = toRoundInfo(payload.new as SnakewordStateRow);
           setRounds((prev) =>
             prev.some((r) => r.roundId === row.roundId) ? prev : [...prev, row],
           );
@@ -240,11 +240,11 @@ export function WendClient({
         {
           event: "UPDATE",
           schema: "public",
-          table: "wend_state",
+          table: "snakeword_state",
           filter: `room_id=eq.${room.id}`,
         },
         (payload) => {
-          const row = toRoundInfo(payload.new as WendStateRow);
+          const row = toRoundInfo(payload.new as SnakewordStateRow);
           setRounds((prev) =>
             prev.map((r) => (r.roundId === row.roundId ? row : r)),
           );
@@ -255,11 +255,11 @@ export function WendClient({
         {
           event: "INSERT",
           schema: "public",
-          table: "wend_found_words",
+          table: "snakeword_found_words",
           filter: `room_id=eq.${room.id}`,
         },
         (payload) => {
-          const row = toFoundWord(payload.new as WendFoundWordRow);
+          const row = toFoundWord(payload.new as SnakewordFoundWordRow);
           setFound((prev) =>
             prev.some((f) => f.id === row.id) ? prev : [...prev, row],
           );
@@ -270,7 +270,7 @@ export function WendClient({
         {
           event: "DELETE",
           schema: "public",
-          table: "wend_found_words",
+          table: "snakeword_found_words",
           filter: `room_id=eq.${room.id}`,
         },
         (payload) => {
@@ -288,7 +288,7 @@ export function WendClient({
 
   const currentRound = useMemo(
     () =>
-      rounds.reduce<WendRoundInfo | null>(
+      rounds.reduce<SnakewordRoundInfo | null>(
         (latest, r) =>
           !latest || r.roundNumber > latest.roundNumber ? r : latest,
         null,
@@ -338,7 +338,7 @@ export function WendClient({
   );
 
   const foundByPlayer = useMemo(() => {
-    const map = new Map<string, WendFoundWord[]>();
+    const map = new Map<string, SnakewordFoundWord[]>();
     for (const f of currentFound) {
       const list = map.get(f.playerId) ?? [];
       list.push(f);
@@ -369,14 +369,14 @@ export function WendClient({
   useEffect(() => {
     if (!daily || !isGameOver || !player || recordedDailyRef.current) return;
     recordedDailyRef.current = true;
-    setDailyStreak(recordDailyResult("wend", getTodayDateKey(), true));
+    setDailyStreak(recordDailyResult("snakeword", getTodayDateKey(), true));
   }, [daily, isGameOver, player]);
 
   const submitPath = useCallback(
     async (path: [number, number][]) => {
       if (!player || !currentRound || isGameOver) return;
       try {
-        await postJson(`/api/rooms/${code}/wend/find`, {
+        await postJson(`/api/rooms/${code}/snakeword/find`, {
           playerId: player.id,
           path,
         });
@@ -393,7 +393,7 @@ export function WendClient({
     setHintPending(true);
     try {
       const data = await postJson<{ hint: { row: number; col: number } }>(
-        `/api/rooms/${code}/wend/hint`,
+        `/api/rooms/${code}/snakeword/hint`,
         { playerId: player.id },
       );
       setHint([data.hint.row, data.hint.col]);
@@ -416,7 +416,7 @@ export function WendClient({
     setUndoing(true);
     try {
       const data = await postJson<{ removed: string }>(
-        `/api/rooms/${code}/wend/undo`,
+        `/api/rooms/${code}/snakeword/undo`,
         {
           playerId: player.id,
         },
@@ -450,7 +450,7 @@ export function WendClient({
         playerId: player.id,
         level: nextLevel,
       });
-      if (isSolo && nextLevel) saveWendLevel(nextLevel);
+      if (isSolo && nextLevel) saveSnakewordLevel(nextLevel);
     } catch (err) {
       setBanner(
         err instanceof Error ? err.message : "Could not start new round",
@@ -530,7 +530,7 @@ export function WendClient({
 
       <div className="mt-6 flex flex-1 flex-col items-center gap-8 md:flex-row md:items-start md:justify-center">
         <div className="w-full max-w-[300px] space-y-4 rounded-3xl bg-foreground/[0.03] p-4">
-          <WendBoard
+          <SnakewordBoard
             cells={currentRound.cells}
             gridSize={currentRound.gridSize}
             lockedCells={lockedCells}
@@ -573,7 +573,7 @@ export function WendClient({
         </div>
 
         {!isSolo && (
-          <WendLeaderboard
+          <SnakewordLeaderboard
             players={players}
             foundByPlayer={foundByPlayer}
             winsByPlayer={winsByPlayer}
@@ -654,7 +654,7 @@ function WordSlots({
   colorById,
 }: {
   wordLengths: number[];
-  found: WendFoundWord[];
+  found: SnakewordFoundWord[];
   players: PlayerInfo[];
   showNames: boolean;
   colorById: Map<string, string>;

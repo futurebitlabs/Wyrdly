@@ -281,7 +281,7 @@ export function RoomClient({
     if (!daily || !isGameOver || !player || recordedDailyRef.current) return;
     recordedDailyRef.current = true;
     const won = winner?.id === player.id;
-    setDailyStreak(recordDailyResult("wyrdle", getTodayDateKey(), won));
+    setDailyStreak(recordDailyResult("fivefold", getTodayDateKey(), won));
   }, [daily, isGameOver, player, winner]);
 
   const letterStatuses = useMemo(() => {

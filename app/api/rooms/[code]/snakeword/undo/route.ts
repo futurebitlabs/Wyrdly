@@ -3,7 +3,7 @@ import { createServiceClient } from "@/lib/supabase/server";
 
 export async function POST(
   request: Request,
-  { params }: RouteContext<"/api/rooms/[code]/wend/undo">,
+  { params }: RouteContext<"/api/rooms/[code]/snakeword/undo">,
 ) {
   const { code } = await params;
   const body = await request.json().catch(() => null);
@@ -21,14 +21,14 @@ export async function POST(
     .eq("code", code.toUpperCase())
     .single();
 
-  if (roomError || !room || room.game_type !== "wend") {
+  if (roomError || !room || room.game_type !== "snakeword") {
     return NextResponse.json({ error: "Room not found" }, { status: 404 });
   }
 
   const [{ data: player, error: playerError }, { data: activeState }] = await Promise.all([
     supabase.from("players").select("id").eq("id", playerId).eq("room_id", room.id).maybeSingle(),
     supabase
-      .from("wend_state")
+      .from("snakeword_state")
       .select("round_id")
       .eq("room_id", room.id)
       .eq("status", "active")
@@ -45,7 +45,7 @@ export async function POST(
   const roundId = activeState.round_id as string;
 
   const { data: lastFound } = await supabase
-    .from("wend_found_words")
+    .from("snakeword_found_words")
     .select("id, word")
     .eq("round_id", roundId)
     .eq("player_id", playerId)
@@ -58,7 +58,7 @@ export async function POST(
   }
 
   const { error: deleteError } = await supabase
-    .from("wend_found_words")
+    .from("snakeword_found_words")
     .delete()
     .eq("id", lastFound.id);
 

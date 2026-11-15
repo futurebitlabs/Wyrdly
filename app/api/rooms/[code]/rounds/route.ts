@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { createRound } from "@/lib/supabase/rounds";
-import { createWendRound } from "@/lib/supabase/wendRounds";
+import { createSnakewordRound } from "@/lib/supabase/snakewordRounds";
 
 export async function POST(
   request: Request,
@@ -44,7 +44,7 @@ export async function POST(
     return NextResponse.json({ error: "Only the host can start a new round" }, { status: 403 });
   }
 
-  const stateTable = room.game_type === "wend" ? "wend_state" : "round_state";
+  const stateTable = room.game_type === "snakeword" ? "snakeword_state" : "round_state";
 
   const { data: active } = await supabase
     .from(stateTable)
@@ -69,8 +69,8 @@ export async function POST(
 
   try {
     const round =
-      room.game_type === "wend"
-        ? await createWendRound(supabase, room.id, nextRoundNumber, level)
+      room.game_type === "snakeword"
+        ? await createSnakewordRound(supabase, room.id, nextRoundNumber, level)
         : await createRound(supabase, room.id, nextRoundNumber);
     return NextResponse.json({ round });
   } catch (err) {

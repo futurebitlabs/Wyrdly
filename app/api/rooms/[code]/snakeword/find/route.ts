@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
-import { isValidPath } from "@/lib/wend/validate";
-import type { WendCell } from "@/lib/wend/generate";
+import { isValidPath } from "@/lib/snakeword/validate";
+import type { SnakewordCell } from "@/lib/snakeword/generate";
 
 export async function POST(
   request: Request,
-  { params }: RouteContext<"/api/rooms/[code]/wend/find">,
+  { params }: RouteContext<"/api/rooms/[code]/snakeword/find">,
 ) {
   const { code } = await params;
   const body = await request.json().catch(() => null);
@@ -27,14 +27,14 @@ export async function POST(
     .eq("code", code.toUpperCase())
     .single();
 
-  if (roomError || !room || room.game_type !== "wend") {
+  if (roomError || !room || room.game_type !== "snakeword") {
     return NextResponse.json({ error: "Room not found" }, { status: 404 });
   }
 
   const [{ data: player, error: playerError }, { data: activeState }] = await Promise.all([
     supabase.from("players").select("id").eq("id", playerId).eq("room_id", room.id).maybeSingle(),
     supabase
-      .from("wend_state")
+      .from("snakeword_state")
       .select("round_id")
       .eq("room_id", room.id)
       .eq("status", "active")
@@ -51,7 +51,7 @@ export async function POST(
   const roundId = activeState.round_id as string;
 
   const { data: puzzle, error: puzzleError } = await supabase
-    .from("wend_puzzles")
+    .from("snakeword_puzzles")
     .select("grid_size, cells, words")
     .eq("id", roundId)
     .single();
@@ -60,7 +60,7 @@ export async function POST(
     return NextResponse.json({ error: "Round not found" }, { status: 404 });
   }
 
-  const cells = puzzle.cells as WendCell[][];
+  const cells = puzzle.cells as SnakewordCell[][];
   const targetWords = (puzzle.words as { word: string }[]).map((w) => w.word);
 
   for (const [r, c] of path as [number, number][]) {
@@ -75,7 +75,7 @@ export async function POST(
     return NextResponse.json({ error: "Not one of the hidden words" }, { status: 400 });
   }
 
-  const { error: insertError } = await supabase.from("wend_found_words").insert({
+  const { error: insertError } = await supabase.from("snakeword_found_words").insert({
     round_id: roundId,
     room_id: room.id,
     player_id: playerId,
@@ -92,7 +92,7 @@ export async function POST(
   }
 
   const { data: foundSoFar } = await supabase
-    .from("wend_found_words")
+    .from("snakeword_found_words")
     .select("player_id, found_at")
     .eq("round_id", roundId);
 
@@ -120,7 +120,7 @@ export async function POST(
     }
 
     const { data: claimed } = await supabase
-      .from("wend_state")
+      .from("snakeword_state")
       .update({
         status: "finished",
         winner_player_id: winnerId,

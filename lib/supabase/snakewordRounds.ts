@@ -1,20 +1,20 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { generateWendPuzzle } from "@/lib/wend/generate";
-import { getWendLevel, WEND_MULTIPLAYER_LEVEL } from "@/lib/wend/levels";
+import { generateSnakewordPuzzle } from "@/lib/snakeword/generate";
+import { getSnakewordLevel, SNAKEWORD_MULTIPLAYER_LEVEL } from "@/lib/snakeword/levels";
 
-export async function createWendRound(
+export async function createSnakewordRound(
   supabase: SupabaseClient,
   roomId: string,
   roundNumber: number,
   levelNumber: number | null,
   seed?: number,
 ) {
-  const resolvedLevelNumber = levelNumber ?? WEND_MULTIPLAYER_LEVEL;
-  const level = getWendLevel(resolvedLevelNumber);
-  const puzzle = generateWendPuzzle(level, seed);
+  const resolvedLevelNumber = levelNumber ?? SNAKEWORD_MULTIPLAYER_LEVEL;
+  const level = getSnakewordLevel(resolvedLevelNumber);
+  const puzzle = generateSnakewordPuzzle(level, seed);
 
   const { data: round, error: roundError } = await supabase
-    .from("wend_puzzles")
+    .from("snakeword_puzzles")
     .insert({
       room_id: roomId,
       round_number: roundNumber,
@@ -27,10 +27,10 @@ export async function createWendRound(
     .single();
 
   if (roundError || !round) {
-    throw new Error(roundError?.message ?? "Could not create Wend round");
+    throw new Error(roundError?.message ?? "Could not create Snakeword round");
   }
 
-  const { error: stateError } = await supabase.from("wend_state").insert({
+  const { error: stateError } = await supabase.from("snakeword_state").insert({
     round_id: round.id,
     room_id: roomId,
     round_number: roundNumber,

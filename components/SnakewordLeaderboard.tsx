@@ -1,18 +1,18 @@
-import type { PlayerInfo, WendFoundWord } from "@/lib/types";
+import type { PlayerInfo, SnakewordFoundWord } from "@/lib/types";
 
-interface WendLeaderboardProps {
+interface SnakewordLeaderboardProps {
   players: PlayerInfo[];
-  foundByPlayer: Map<string, WendFoundWord[]>;
+  foundByPlayer: Map<string, SnakewordFoundWord[]>;
   winsByPlayer: Map<string, number>;
   localPlayerId: string;
 }
 
-export function WendLeaderboard({
+export function SnakewordLeaderboard({
   players,
   foundByPlayer,
   winsByPlayer,
   localPlayerId,
-}: WendLeaderboardProps) {
+}: SnakewordLeaderboardProps) {
   const ranks = players
     .map((player) => ({
       player,

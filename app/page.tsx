@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   savePlayer,
-  loadWendLevel,
+  loadSnakewordLevel,
   loadDailyStreak,
   hasPlayedDailyOn,
   type DailyStreakState,
@@ -12,11 +12,11 @@ import {
 import { getTodayDateKey } from "@/lib/daily";
 import { postJson } from "@/lib/postJson";
 
-type GameType = "wyrdle" | "wend";
+type GameType = "fivefold" | "snakeword";
 
 const GAMES: { id: GameType; title: string; description: string }[] = [
-  { id: "wyrdle", title: "Fivefold", description: "Guess the hidden word before anyone else." },
-  { id: "wend", title: "Snakeword", description: "Trace adjacent tiles to find every hidden word." },
+  { id: "fivefold", title: "Fivefold", description: "Guess the hidden word before anyone else." },
+  { id: "snakeword", title: "Snakeword", description: "Trace adjacent tiles to find every hidden word." },
 ];
 
 export default function Home() {
@@ -66,7 +66,7 @@ export default function Home() {
       }>("/api/rooms", {
         name: "Player",
         gameType: game,
-        level: game === "wend" ? loadWendLevel() : undefined,
+        level: game === "snakeword" ? loadSnakewordLevel() : undefined,
       });
       savePlayer(data.room.code, { playerId: data.player.id, name: data.player.name });
       router.push(`/room/${data.room.code}?solo=1`);
@@ -191,7 +191,7 @@ export default function Home() {
             {pending === "daily"
               ? "Starting…"
               : playedToday
-                ? `Today's ${game === "wend" ? "board" : "word"} is solved. Come back tomorrow.`
+                ? `Today's ${game === "snakeword" ? "board" : "word"} is solved. Come back tomorrow.`
                 : "Same puzzle for everyone today. Keep your streak alive."}
           </p>
         </button>

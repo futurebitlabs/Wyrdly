@@ -17,7 +17,7 @@ export function getDailyWord(dateKey: string): string {
   return WORDS[index];
 }
 
-// A stable per-day seed for other deterministic daily puzzles (e.g. Wend).
+// A stable per-day seed for other deterministic daily puzzles (e.g. Snakeword).
 export function getDailySeed(dateKey: string): number {
   return getDayNumber(dateKey);
 }

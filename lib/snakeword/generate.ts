@@ -1,17 +1,17 @@
-import { WEND_WORDS_BY_LENGTH } from "@/lib/wendWords";
-import type { WendLevel } from "./levels";
+import { SNAKEWORD_WORDS_BY_LENGTH } from "@/lib/snakewordWords";
+import type { SnakewordLevel } from "./levels";
 
-export type WendCell = string | null; // uppercase letter, or null = blocked
+export type SnakewordCell = string | null; // uppercase letter, or null = blocked
 
-export interface WendPlacedWord {
+export interface SnakewordPlacedWord {
   word: string;
   path: [number, number][];
 }
 
-export interface WendPuzzle {
+export interface SnakewordPuzzle {
   gridSize: number;
-  cells: WendCell[][];
-  words: WendPlacedWord[];
+  cells: SnakewordCell[][];
+  words: SnakewordPlacedWord[];
 }
 
 function mulberry32(seed: number) {
@@ -89,17 +89,17 @@ function findPath(
   return null;
 }
 
-function attemptPuzzle(level: WendLevel, rng: () => number): WendPuzzle | null {
+function attemptPuzzle(level: SnakewordLevel, rng: () => number): SnakewordPuzzle | null {
   const { gridSize, wordLengths } = level;
   const occupied = new Set<string>();
-  const placed: WendPlacedWord[] = [];
+  const placed: SnakewordPlacedWord[] = [];
   const usedWords = new Set<string>();
 
   for (const length of [...wordLengths].sort((a, b) => b - a)) {
     const path = findPath(gridSize, length, occupied, rng, 400);
     if (!path) return null;
 
-    const pool = WEND_WORDS_BY_LENGTH[length] ?? [];
+    const pool = SNAKEWORD_WORDS_BY_LENGTH[length] ?? [];
     const candidates = shuffle(pool, rng);
     const word = candidates.find((w) => !usedWords.has(w)) ?? candidates[0];
     if (!word) return null;
@@ -109,7 +109,7 @@ function attemptPuzzle(level: WendLevel, rng: () => number): WendPuzzle | null {
     placed.push({ word, path });
   }
 
-  const cells: WendCell[][] = Array.from({ length: gridSize }, (_, r) =>
+  const cells: SnakewordCell[][] = Array.from({ length: gridSize }, (_, r) =>
     Array.from({ length: gridSize }, (_, c) => (occupied.has(`${r},${c}`) ? "#" : null)),
   );
   for (const { word, path } of placed) {
@@ -126,7 +126,7 @@ function attemptPuzzle(level: WendLevel, rng: () => number): WendPuzzle | null {
   return { gridSize, cells, words: placed };
 }
 
-export function generateWendPuzzle(level: WendLevel, seed = Date.now() ^ Math.floor(Math.random() * 1e9)): WendPuzzle {
+export function generateSnakewordPuzzle(level: SnakewordLevel, seed = Date.now() ^ Math.floor(Math.random() * 1e9)): SnakewordPuzzle {
   for (let attempt = 0; attempt < 25; attempt++) {
     const rng = mulberry32(seed + attempt * 7919);
     const puzzle = attemptPuzzle(level, rng);
@@ -134,5 +134,5 @@ export function generateWendPuzzle(level: WendLevel, seed = Date.now() ^ Math.fl
       return puzzle;
     }
   }
-  throw new Error("Could not generate Wend puzzle for level after 25 attempts");
+  throw new Error("Could not generate Snakeword puzzle for level after 25 attempts");
 }

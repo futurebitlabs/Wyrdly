@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { RoomClient } from "@/components/RoomClient";
-import { WendClient } from "@/components/WendClient";
+import { SnakewordClient } from "@/components/SnakewordClient";
 import { createServiceClient } from "@/lib/supabase/server";
 
 async function RoomPageInner({ params, searchParams }: PageProps<"/room/[code]">) {
@@ -17,8 +17,8 @@ async function RoomPageInner({ params, searchParams }: PageProps<"/room/[code]">
     .eq("code", code)
     .maybeSingle();
 
-  if (room?.game_type === "wend") {
-    return <WendClient code={code} solo={solo} daily={daily} />;
+  if (room?.game_type === "snakeword") {
+    return <SnakewordClient code={code} solo={solo} daily={daily} />;
   }
   return <RoomClient code={code} solo={solo} daily={daily} />;
 }

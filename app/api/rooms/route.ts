@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { createRound } from "@/lib/supabase/rounds";
-import { createWendRound } from "@/lib/supabase/wendRounds";
+import { createSnakewordRound } from "@/lib/supabase/snakewordRounds";
 import { generateRoomCode } from "@/lib/roomCode";
 import { getDailySeed, getDailyWord, getTodayDateKey } from "@/lib/daily";
 
@@ -9,12 +9,12 @@ const WORD_LENGTH = 5;
 const MAX_GUESSES = 6;
 const MAX_CODE_ATTEMPTS = 5;
 
-type GameType = "wyrdle" | "wend";
+type GameType = "fivefold" | "snakeword";
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
   const name = typeof body?.name === "string" ? body.name.trim().slice(0, 24) : "";
-  const gameType: GameType = body?.gameType === "wend" ? "wend" : "wyrdle";
+  const gameType: GameType = body?.gameType === "snakeword" ? "snakeword" : "fivefold";
   const level =
     typeof body?.level === "number" && Number.isFinite(body.level) ? body.level : null;
   const daily = body?.daily === true;
@@ -66,9 +66,9 @@ export async function POST(request: Request) {
   }
 
   try {
-    if (gameType === "wend") {
+    if (gameType === "snakeword") {
       const seed = daily ? getDailySeed(getTodayDateKey()) : undefined;
-      await createWendRound(supabase, room.id, 1, daily ? null : level, seed);
+      await createSnakewordRound(supabase, room.id, 1, daily ? null : level, seed);
     } else {
       await createRound(supabase, room.id, 1, daily ? getDailyWord(getTodayDateKey()) : undefined);
     }

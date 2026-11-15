@@ -1,10 +1,10 @@
-// Common English words bucketed by length, used to generate Wend grids.
+// Common English words bucketed by length, used to generate Snakeword grids.
 // Source: common words from a profanity-filtered top-10000 English word
 // list (https://github.com/first20hours/google-10000-english), kept only
 // where also present in the ENABLE word-game dictionary
 // (https://github.com/dolph/dictionary) to filter out abbreviations and
 // internet-crawl artifacts that aren''t real recognizable words.
-export const WEND_WORDS_BY_LENGTH: Readonly<Record<number, readonly string[]>> = {
+export const SNAKEWORD_WORDS_BY_LENGTH: Readonly<Record<number, readonly string[]>> = {
   3: [
     "the",
     "and",

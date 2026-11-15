@@ -1,18 +1,18 @@
 "use client";
 
 import { useRef, useState } from "react";
-import type { WendCell } from "@/lib/wend/generate";
+import type { SnakewordCell } from "@/lib/snakeword/generate";
 
-export interface WendFoundPath {
+export interface SnakewordFoundPath {
   path: [number, number][];
   color: string;
 }
 
-interface WendBoardProps {
-  cells: WendCell[][];
+interface SnakewordBoardProps {
+  cells: SnakewordCell[][];
   gridSize: number;
   lockedCells: Set<string>;
-  foundPaths: WendFoundPath[];
+  foundPaths: SnakewordFoundPath[];
   hintCell: [number, number] | null;
   disabled: boolean;
   onSubmit: (path: [number, number][]) => void;
@@ -35,7 +35,7 @@ function cellCenter(gridSize: number, [r, c]: [number, number]): string {
   return `${(c + 0.5) * unit},${(r + 0.5) * unit}`;
 }
 
-export function WendBoard({
+export function SnakewordBoard({
   cells,
   gridSize,
   lockedCells,
@@ -43,7 +43,7 @@ export function WendBoard({
   hintCell,
   disabled,
   onSubmit,
-}: WendBoardProps) {
+}: SnakewordBoardProps) {
   const [path, setPath] = useState<[number, number][]>([]);
   const draggingRef = useRef(false);
 

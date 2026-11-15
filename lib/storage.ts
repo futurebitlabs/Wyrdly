@@ -23,11 +23,11 @@ export function loadPlayer(code: string): StoredPlayer | null {
   }
 }
 
-const WEND_LEVEL_KEY = "wordly:wend:level";
+const SNAKEWORD_LEVEL_KEY = "wordly:snakeword:level";
 
-export function loadWendLevel(): number {
+export function loadSnakewordLevel(): number {
   try {
-    const raw = localStorage.getItem(WEND_LEVEL_KEY);
+    const raw = localStorage.getItem(SNAKEWORD_LEVEL_KEY);
     const n = raw ? parseInt(raw, 10) : 1;
     return Number.isFinite(n) && n >= 1 ? n : 1;
   } catch {
@@ -35,15 +35,15 @@ export function loadWendLevel(): number {
   }
 }
 
-export function saveWendLevel(level: number) {
+export function saveSnakewordLevel(level: number) {
   try {
-    localStorage.setItem(WEND_LEVEL_KEY, String(level));
+    localStorage.setItem(SNAKEWORD_LEVEL_KEY, String(level));
   } catch {
     // ignore
   }
 }
 
-export type DailyGame = "wyrdle" | "wend";
+export type DailyGame = "fivefold" | "snakeword";
 
 const DAILY_STREAK_KEY_PREFIX = "wordly:dailyStreak:";
 

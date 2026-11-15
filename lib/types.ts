@@ -1,7 +1,7 @@
 import type { GuessResult } from "./wordle";
-import type { WendCell } from "./wend/generate";
+import type { SnakewordCell } from "./snakeword/generate";
 
-export type GameType = "wyrdle" | "wend";
+export type GameType = "fivefold" | "snakeword";
 
 export interface RoomInfo {
   id: string;
@@ -41,14 +41,14 @@ export interface GuessRow {
   createdAt: string;
 }
 
-export interface WendRoundInfo {
+export interface SnakewordRoundInfo {
   roundId: string;
   roomId: string;
   roundNumber: number;
   levelNumber: number;
   status: RoundStatus;
   gridSize: number;
-  cells: WendCell[][];
+  cells: SnakewordCell[][];
   wordLengths: number[];
   words: string[] | null;
   winnerPlayerId: string | null;
@@ -56,7 +56,7 @@ export interface WendRoundInfo {
   finishedAt: string | null;
 }
 
-export interface WendFoundWord {
+export interface SnakewordFoundWord {
   id: string;
   roundId: string;
   playerId: string;

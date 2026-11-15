@@ -3,7 +3,7 @@ import { createServiceClient } from "@/lib/supabase/server";
 
 export async function POST(
   request: Request,
-  { params }: RouteContext<"/api/rooms/[code]/wend/hint">,
+  { params }: RouteContext<"/api/rooms/[code]/snakeword/hint">,
 ) {
   const { code } = await params;
   const body = await request.json().catch(() => null);
@@ -21,7 +21,7 @@ export async function POST(
     .eq("code", code.toUpperCase())
     .single();
 
-  if (roomError || !room || room.game_type !== "wend") {
+  if (roomError || !room || room.game_type !== "snakeword") {
     return NextResponse.json({ error: "Room not found" }, { status: 404 });
   }
 
@@ -37,7 +37,7 @@ export async function POST(
   }
 
   const { data: activeState } = await supabase
-    .from("wend_state")
+    .from("snakeword_state")
     .select("round_id")
     .eq("room_id", room.id)
     .eq("status", "active")
@@ -50,7 +50,7 @@ export async function POST(
   const roundId = activeState.round_id as string;
 
   const { data: existingHint } = await supabase
-    .from("wend_hints")
+    .from("snakeword_hints")
     .select("row, col")
     .eq("round_id", roundId)
     .eq("player_id", playerId)
@@ -61,8 +61,8 @@ export async function POST(
   }
 
   const [{ data: puzzle, error: puzzleError }, { data: found }] = await Promise.all([
-    supabase.from("wend_puzzles").select("words").eq("id", roundId).single(),
-    supabase.from("wend_found_words").select("word").eq("round_id", roundId),
+    supabase.from("snakeword_puzzles").select("words").eq("id", roundId).single(),
+    supabase.from("snakeword_found_words").select("word").eq("round_id", roundId),
   ]);
 
   if (puzzleError || !puzzle) {
@@ -81,13 +81,13 @@ export async function POST(
   const [row, col] = target.path[0];
 
   const { data: inserted, error: insertError } = await supabase
-    .from("wend_hints")
+    .from("snakeword_hints")
     .insert({ round_id: roundId, player_id: playerId, row, col })
     .select("row, col")
     .single();
 
   if (insertError || !inserted) {
-    console.error("Failed to create wend hint", insertError);
+    console.error("Failed to create snakeword hint", insertError);
     return NextResponse.json({ error: "Could not get hint" }, { status: 500 });
   }
 
