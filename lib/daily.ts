@@ -7,8 +7,17 @@ export function getTodayDateKey(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+function getDayNumber(dateKey: string): number {
+  return Math.floor((Date.parse(`${dateKey}T00:00:00Z`) - EPOCH) / MS_PER_DAY);
+}
+
 export function getDailyWord(dateKey: string): string {
-  const dayNumber = Math.floor((Date.parse(`${dateKey}T00:00:00Z`) - EPOCH) / MS_PER_DAY);
+  const dayNumber = getDayNumber(dateKey);
   const index = ((dayNumber % WORDS.length) + WORDS.length) % WORDS.length;
   return WORDS[index];
+}
+
+// A stable per-day seed for other deterministic daily puzzles (e.g. Wend).
+export function getDailySeed(dateKey: string): number {
+  return getDayNumber(dateKey);
 }

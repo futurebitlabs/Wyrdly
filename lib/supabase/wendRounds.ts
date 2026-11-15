@@ -7,10 +7,11 @@ export async function createWendRound(
   roomId: string,
   roundNumber: number,
   levelNumber: number | null,
+  seed?: number,
 ) {
   const resolvedLevelNumber = levelNumber ?? WEND_MULTIPLAYER_LEVEL;
   const level = getWendLevel(resolvedLevelNumber);
-  const puzzle = generateWendPuzzle(level);
+  const puzzle = generateWendPuzzle(level, seed);
 
   const { data: round, error: roundError } = await supabase
     .from("wend_puzzles")

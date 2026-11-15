@@ -43,7 +43,9 @@ export function saveWendLevel(level: number) {
   }
 }
 
-const DAILY_STREAK_KEY = "wordly:wyrdle:dailyStreak";
+export type DailyGame = "wyrdle" | "wend";
+
+const DAILY_STREAK_KEY_PREFIX = "wordly:dailyStreak:";
 
 export interface DailyStreakState {
   lastPlayedDate: string | null;
@@ -59,9 +61,9 @@ const EMPTY_STREAK: DailyStreakState = {
   maxStreak: 0,
 };
 
-export function loadDailyStreak(): DailyStreakState {
+export function loadDailyStreak(game: DailyGame): DailyStreakState {
   try {
-    const raw = localStorage.getItem(DAILY_STREAK_KEY);
+    const raw = localStorage.getItem(DAILY_STREAK_KEY_PREFIX + game);
     if (!raw) return EMPTY_STREAK;
     return { ...EMPTY_STREAK, ...(JSON.parse(raw) as Partial<DailyStreakState>) };
   } catch {
@@ -69,8 +71,8 @@ export function loadDailyStreak(): DailyStreakState {
   }
 }
 
-export function hasPlayedDailyOn(dateKey: string): boolean {
-  return loadDailyStreak().lastPlayedDate === dateKey;
+export function hasPlayedDailyOn(game: DailyGame, dateKey: string): boolean {
+  return loadDailyStreak(game).lastPlayedDate === dateKey;
 }
 
 function dayBefore(dateKey: string): string {
@@ -81,8 +83,8 @@ function dayBefore(dateKey: string): string {
 
 // Idempotent for a given dateKey: calling it again for the same day (e.g. on
 // re-render or page reload) returns the already-recorded state unchanged.
-export function recordDailyResult(dateKey: string, won: boolean): DailyStreakState {
-  const existing = loadDailyStreak();
+export function recordDailyResult(game: DailyGame, dateKey: string, won: boolean): DailyStreakState {
+  const existing = loadDailyStreak(game);
   if (existing.lastPlayedDate === dateKey) return existing;
 
   const continuesStreak = existing.lastPlayedDate === dayBefore(dateKey) && existing.lastResultWon;
@@ -95,7 +97,7 @@ export function recordDailyResult(dateKey: string, won: boolean): DailyStreakSta
   };
 
   try {
-    localStorage.setItem(DAILY_STREAK_KEY, JSON.stringify(next));
+    localStorage.setItem(DAILY_STREAK_KEY_PREFIX + game, JSON.stringify(next));
   } catch {
     // ignore
   }

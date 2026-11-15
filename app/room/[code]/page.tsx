@@ -18,7 +18,7 @@ async function RoomPageInner({ params, searchParams }: PageProps<"/room/[code]">
     .maybeSingle();
 
   if (room?.game_type === "wend") {
-    return <WendClient code={code} solo={solo} />;
+    return <WendClient code={code} solo={solo} daily={daily} />;
   }
   return <RoomClient code={code} solo={solo} daily={daily} />;
 }

@@ -3,7 +3,7 @@ import { createServiceClient } from "@/lib/supabase/server";
 import { createRound } from "@/lib/supabase/rounds";
 import { createWendRound } from "@/lib/supabase/wendRounds";
 import { generateRoomCode } from "@/lib/roomCode";
-import { getDailyWord, getTodayDateKey } from "@/lib/daily";
+import { getDailySeed, getDailyWord, getTodayDateKey } from "@/lib/daily";
 
 const WORD_LENGTH = 5;
 const MAX_GUESSES = 6;
@@ -17,7 +17,7 @@ export async function POST(request: Request) {
   const gameType: GameType = body?.gameType === "wend" ? "wend" : "wyrdle";
   const level =
     typeof body?.level === "number" && Number.isFinite(body.level) ? body.level : null;
-  const daily = body?.daily === true && gameType === "wyrdle";
+  const daily = body?.daily === true;
 
   if (!name) {
     return NextResponse.json({ error: "Name is required" }, { status: 400 });
@@ -67,7 +67,8 @@ export async function POST(request: Request) {
 
   try {
     if (gameType === "wend") {
-      await createWendRound(supabase, room.id, 1, level);
+      const seed = daily ? getDailySeed(getTodayDateKey()) : undefined;
+      await createWendRound(supabase, room.id, 1, daily ? null : level, seed);
     } else {
       await createRound(supabase, room.id, 1, daily ? getDailyWord(getTodayDateKey()) : undefined);
     }

@@ -1,8 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getSupabaseClient } from "@/lib/supabase/client";
-import { loadPlayer, savePlayer, saveWendLevel } from "@/lib/storage";
+import {
+  loadPlayer,
+  savePlayer,
+  saveWendLevel,
+  recordDailyResult,
+  type DailyStreakState,
+} from "@/lib/storage";
+import { getTodayDateKey } from "@/lib/daily";
 import { postJson } from "@/lib/postJson";
 import type {
   PlayerInfo,
@@ -95,9 +102,11 @@ function toFoundWord(row: WendFoundWordRow): WendFoundWord {
 export function WendClient({
   code,
   solo = false,
+  daily = false,
 }: {
   code: string;
   solo?: boolean;
+  daily?: boolean;
 }) {
   const [status, setStatus] = useState<Status>("loading");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -355,6 +364,14 @@ export function WendClient({
     [players, currentRound],
   );
 
+  const [dailyStreak, setDailyStreak] = useState<DailyStreakState | null>(null);
+  const recordedDailyRef = useRef(false);
+  useEffect(() => {
+    if (!daily || !isGameOver || !player || recordedDailyRef.current) return;
+    recordedDailyRef.current = true;
+    setDailyStreak(recordDailyResult("wend", getTodayDateKey(), true));
+  }, [daily, isGameOver, player]);
+
   const submitPath = useCallback(
     async (path: [number, number][]) => {
       if (!player || !currentRound || isGameOver) return;
@@ -494,14 +511,17 @@ export function WendClient({
           <HomeButton />
           <div>
             <p className="text-[11px] font-medium uppercase tracking-wide text-foreground/40">
-              {isSolo ? "Solo" : "Game key"} · Level {currentRound.levelNumber}
+              {daily ? "Daily challenge" : isSolo ? "Solo" : "Game key"}
+              {!daily && ` · Level ${currentRound.levelNumber}`}
             </p>
-            <p className="font-mono text-lg font-bold tracking-widest text-foreground">
-              {room.code}
-            </p>
+            {!daily && (
+              <p className="font-mono text-lg font-bold tracking-widest text-foreground">
+                {room.code}
+              </p>
+            )}
           </div>
         </div>
-        {isSolo && (
+        {isSolo && !daily && (
           <p className="max-w-[45%] text-right text-[11px] leading-tight text-foreground/40">
             Share this key to invite others
           </p>
@@ -566,7 +586,9 @@ export function WendClient({
         <div className="mt-6 flex items-end justify-between gap-4">
           <div className="min-w-0">
             <p className="text-sm font-medium text-foreground/80">
-              {isSolo ? (
+              {daily ? (
+                "Today's board cleared!"
+              ) : isSolo ? (
                 "Level cleared!"
               ) : winner ? (
                 <>
@@ -588,13 +610,24 @@ export function WendClient({
                 <WordMeanings words={currentRound.words} label="Show meanings" />
               </>
             )}
-            {!player.isHost && (
-              <p className="mt-0.5 text-xs text-foreground/50">
-                Waiting for the host…
-              </p>
+            {daily ? (
+              <div className="mt-1 space-y-0.5">
+                <p className="text-sm font-medium text-foreground">
+                  {dailyStreak && dailyStreak.currentStreak > 0
+                    ? `🔥 ${dailyStreak.currentStreak} day streak`
+                    : "Streak reset — clear tomorrow's board to start a new one"}
+                </p>
+                <p className="text-xs text-foreground/50">Come back tomorrow for a new board.</p>
+              </div>
+            ) : (
+              !player.isHost && (
+                <p className="mt-0.5 text-xs text-foreground/50">
+                  Waiting for the host…
+                </p>
+              )
             )}
           </div>
-          {player.isHost && (
+          {!daily && player.isHost && (
             <button
               onClick={handlePlayAgain}
               disabled={startingRound}
